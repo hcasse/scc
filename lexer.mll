@@ -21,6 +21,9 @@ open Parser
 
 let space = [' ' '\t' '\n']+
 let int = ['0'-'9']+
+let frac = '.' int
+let exp = ['e' 'E'] ['+' '-']? int
+let flt = frac | int frac | int exp | frac exp | int frac exp
 let id = ['_' 'a'-'z' 'A'-'Z']['_' 'a'-'z' 'A'-'Z' '0'-'9']*
 
 rule scan =
@@ -68,6 +71,9 @@ parse	";"			{ SEMI }
 
 |		id as s		{ ID s }
 |		int	as s	{ INT (int_of_string s) }
+|		flt as s	{ FLOAT (float_of_string s) }
+|		'\'' ([^ '\\'] as c) '\''
+					{ INT (Char.code c) }
 
 |		space		{ scan lexbuf }
 |		_ as c		{ raise (Common.LexerError (fun out -> Printf.fprintf out "unknown character '%c'" c)) }

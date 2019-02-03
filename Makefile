@@ -7,6 +7,7 @@ SOURCES = \
 	common.ml \
 	ast.ml \
 	sem.ml \
+	cst.ml \
 	parser.mly \
 	lexer.mll \
 	main.ml
@@ -40,6 +41,8 @@ parser.cmi: common.cmo
 %.ml: %.mll
 	$(OCAMLLEX) $< -o $@
 
+
+# packaging
 DIST = \
 	$(SOURCES) \
 	*.mly \
@@ -49,6 +52,7 @@ DIST = \
 	karel.txt
 ARC=scc
 
+
 dist:
 	-rm -rf $(ARC)
 	mkdir $(ARC)
@@ -56,3 +60,43 @@ dist:
 	tar cvfz $(ARC).tgz $(ARC)
 	cd $(ARC); make
 
+
+# testing
+POS_TESTS = \
+	global
+NEG_TESTS = \
+	init-exist-err \
+	init-ptr-err
+
+test: scc
+
+	@for f in $(POS_TESTS); do \
+		echo -n "$$f ... "; \
+		if ./scc tests/$$f.c >tests/$$f.out 2>&1; then \
+			if diff tests/$$f.ref tests/$$f.out; then \
+				echo "OK"; \
+			else \
+				echo "failed (output)"; \
+			fi; \
+		else \
+			echo "failed (error)"; \
+		fi; \
+	done
+
+	@for f in $(NEG_TESTS); do \
+		echo -n "$$f ... "; \
+		if ./scc tests/$$f.c > tests/$$f.out 2>&1; then \
+			echo "failed (no error)"; \
+		else \
+			if diff tests/$$f.ref tests/$$f.out; then \
+				echo "OK"; \
+			else \
+				echo "failed (output)"; \
+			fi; \
+		fi; \
+	done
+
+tests/%.ref: tests/%.c scc
+	-./scc $< >$@ 2>&1
+
+	

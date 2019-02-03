@@ -15,6 +15,8 @@
  *	along with SCC.  If not, see <http://www.gnu.org/licenses/>.
  *)
 
+open Printf
+
 (** This modules contains common types and functions used throughout
 	the SCC project. They concern mainly types description, error
 	management and source line management. *)
@@ -37,6 +39,12 @@ exception SemanticError of (out_channel -> unit)
 
 (** Transitional error to let ELINE/SLINE add line information. *)
 exception PreError of (out_channel -> unit)
+
+
+(** Raise a PreError with f as a message.
+	@param f	Function displaying the error message. *)
+let pre_error f =
+	raise (PreError (fun out -> f out))
 
 
 (** Build a lexbuf for the given file.
@@ -144,28 +152,40 @@ let print_source_line text fcol lcol out =
 	output_string out (String.sub text lcol ((String.length text) - lcol))
 
 
+(** Print a message refering to a soure line position.
+	@param loc	Location of the message.
+	@param pref	Message prefix.
+	@param msg	Function to display the message.
+	@param out	Output channel to print to. *)
+let print_source_msg loc pref msg out =
+	if loc = null_loc then
+		printm [prints pref; prints ": "; msg; println] out
+	else
+		let (text, source, line, fcol, lcol) = loc_to_pos loc in
+		let print_pos out = Printf.fprintf out "%s: %s:%d:%d: " pref source line fcol in
+		printm [print_source_line text fcol lcol; print_pos; msg; println] out
+
+
 (** Delayed display of a located error.
 	@param loc	Current location.
 	@param msg	Message to display. *)
-let printl loc msg out =
-	if loc = null_loc then
-		printm [prints "ERROR: "; msg; println] out
-	else
-		let (text, source, line, fcol, lcol) = loc_to_pos loc in
-		let print_pos out = Printf.fprintf out "ERROR: %s:%d:%d: " source line fcol in
-		printm [print_source_line text fcol lcol; print_pos; msg; println] out
+let error loc msg =
+	print_source_msg loc "ERROR" msg stderr
+
+
+(** Delayed display of a located error and stop the application.
+	@param loc	Current location.
+	@param msg	Message to display. *)
+let fatal loc msg =
+	print_source_msg loc "ERROR" msg stderr;
+	exit 1
 
 
 (** Display a warning message.
 	@param loc	Location.
 	@param msg	Message to display. *)
 let warn loc msg =
-	if loc = null_loc then
-		printm [prints "WARNING: "; msg; println] stderr
-	else
-		let (text, source, line, fcol, lcol) = loc_to_pos loc in
-		let print_pos out = Printf.fprintf out "WARNING: %s:%d:%d: " source line fcol in
-		printm [print_source_line text fcol lcol; print_pos; msg; println] stderr
+	print_source_msg loc "WARNING" msg stderr
 
 
 (** Create the location corresponding to the current position
@@ -237,6 +257,8 @@ let rec output_type out t =
 (** Print to standard  output the given type. *)
 let print_type = output_type stdout
 
+let printt t = fun out -> output_type out t
+
 
 (** Manage the support of a PreError raise when f is called. In this case,
  * display the error message prefixed with the given location. Else just
@@ -248,5 +270,10 @@ let handle_error l f =
 	try
 		f ()
 	with PreError m ->
-		printl l m stderr;
+		error l m;
 		exit 1
+
+
+(* easy printf output *)
+let outt = output_type
+let outl = output_loc

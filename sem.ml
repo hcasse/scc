@@ -57,6 +57,13 @@ let global e i = e i GLOBAL
 let local e i = e i LOCAL
 
 
+(** Get the value corresponding to i in the environment.
+	@param e	Environment to look in.
+	@param i	Looked identifier.
+	@return		Found value. *)
+let get_env e i = e i LOCAL
+
+
 (** Ensure uniqueness of names for local variables.
 	@param ds	Declarations to rename.
 	@return		Declarations with unique local variable name. *)
@@ -75,10 +82,10 @@ and rename_decs ds env =
 			match h with
 			| NODECL ->
 				(h, env)
-			| VARDECL (_, i, _)	->
-				(h, add_env env i i)
-			| FUNDECL (FUN(rt, ps), i, s)	->
-				(FUNDECL (FUN(rt, ps), i, rename_stmt s (declare_params ps env)), env)
+			| VARDECL (l, t, i, e)	->
+				(VARDECL (l, t, i, rename_expr e env), add_env env i i)
+			| FUNDECL (loc, FUN(rt, ps), i, s)	->
+				(FUNDECL (loc, FUN(rt, ps), i, rename_stmt s (declare_params ps env)), env)
 			| FUNDECL _ ->
 				failwith "function without function type" in
 		h::(rename_decs t env)
@@ -149,6 +156,8 @@ let auto_convert tt ft =
 	| (CHAR, FLOAT)
 	| (FLOAT, INT)
 	| (FLOAT, CHAR)
+	| (PTR VOID, PTR _) ->
+		true
 	| _ ->
 		false
 
@@ -247,9 +256,18 @@ and type_dec dec env =
 			failwith "bad function type in type_dec" in
 
 	match dec with
-	| NODECL			-> (NODECL, env)
-	| VARDECL (t, i, e) -> (VARDECL (t, i, type_expr e env), add_env env i t)
-	| FUNDECL (t, i, s) -> (FUNDECL (t, i, type_stmt s (declare_params t env)), add_env env i t)
+	| NODECL ->
+		(NODECL, env)
+	| VARDECL (l, t, i, e) ->
+		let e = type_expr e env in
+		let et = expr_type e in
+		let e =
+			if et = VOID || t = et then e else
+			if auto_convert t et then CAST(t, e) else
+			fatal l (fun out -> fprintf out "cannot convert initializer of type %a to %a!" outt et outt t) in
+		(VARDECL (l, t, i, e), add_env env i t)
+	| FUNDECL (l, t, i, s) ->
+		(FUNDECL (l, t, i, type_stmt s (declare_params t env)), add_env env i t)
 
 and type_expr e env =
 	let cast tt ft e =
@@ -322,7 +340,7 @@ and type_expr e env =
 	
 	| ADDR (_, r) ->
 		let r = type_refr r env in
-		ADDR (refr_type r, r)
+		ADDR (PTR (refr_type r), r)
 	
 	| CAST (tt, e) ->
 		let e = type_expr e env in

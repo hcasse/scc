@@ -46,13 +46,14 @@ let rec make_decs bt decs s =
 let check decs =
 	let decs = Sem.check_names decs in
 	let decs = Sem.check_types decs in
+	let decs = Cst.check decs in
 	decs
 %}
 
 %token<string> ID
 %token<int> INT
 %token<Common.type_t> TYPE
-/*%token<float> FLOAT*/
+%token<float> FLOAT
 
 %token EQ
 %token EQ_EQ EXCLAM_EQ LT LT_EQ GT GT_EQ
@@ -113,10 +114,10 @@ defs:	def
 def:
 	SEMI
 		{ [] }
-|	TYPE decls SEMI
-		{ List.map (fun (t, n, e) -> VARDECL (set_type $1 t, n, e)) $2 }
-|	TYPE decl LBRACE opt_stmts RBRACE
-		{ let (t, n, _) = $2 in [FUNDECL (set_type $1 t, n, $4)] }
+|	TYPE left decls right SEMI
+		{ List.map (fun (t, n, e) -> VARDECL (loc $2 $4, set_type $1 t, n, e)) $3 }
+|	TYPE left decl right LBRACE opt_stmts RBRACE
+		{ let (t, n, _) = $3 in [FUNDECL (loc $2 $4, set_type $1 t, n, $6)] }
 ;
 
 opt_params:	/* empty */
@@ -267,8 +268,8 @@ expr:
 simple_expr:
 	INT left right
 		{ eline (loc $2 $3) (CST (VOID, INTV $1)) }
-/*|	FLOAT left right
-		{ eline (loc $2 $3) (CST (VOID, FLOATV $1)) }*/
+|	FLOAT left right
+		{ eline (loc $2 $3) (CST (VOID, FLOATV $1)) }
 |	refr
 		{ REF(VOID, $1) }
 |	LPAR left expr RPAR right

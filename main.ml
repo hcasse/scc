@@ -28,8 +28,8 @@ let compile path =
 		Parser.prog Lexer.scan (open_source path);
 		print_string "Success!\n"
 	with
-	|	Parsing.Parse_error				-> print_fatal (printl (current_loc ()) (prints "syntax error"))
-	|	Common.LexerError msg 			-> print_fatal (printl (current_loc ()) msg)
+	|	Parsing.Parse_error				-> fatal (current_loc ()) (prints "syntax error")
+	|	Common.LexerError msg 			-> fatal (current_loc ()) msg
 	|	Common.SyntaxError msg 			-> print_fatal msg
 
 let _ = 

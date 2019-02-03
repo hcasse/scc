@@ -87,8 +87,8 @@ and refr =
 
 type decl =
 	| NODECL
-	| VARDECL of type_t * string * expr
-	| FUNDECL of type_t * string * stmt
+	| VARDECL of loc_t * type_t * string * expr
+	| FUNDECL of loc_t * type_t * string * stmt
 
 
 let outs = output_string
@@ -294,7 +294,7 @@ let output_decl out d =
 	match d with
 	| NODECL ->
 		p "NULL"
-	| VARDECL(t, n, e) ->
+	| VARDECL(_, t, n, e) ->
 		p "VARDECL(";
 		output_type out t;
 		p ", ";
@@ -302,7 +302,7 @@ let output_decl out d =
 		p ", ";
 		output_expr out e;
 		p ")\n\n"
-	| FUNDECL (t, n, s) ->
+	| FUNDECL (_, t, n, s) ->
 		p "FUNDECL(";
 		output_type out t;
 		p ", ";
@@ -379,7 +379,7 @@ let rec stmt_loc s =
 	@param e	Expression wher the error applies.
 	@param msg	Message of the error. *)
 let expr_error e msg out =
-	printl (expr_loc e) msg
+	error (expr_loc e) msg
 
 
 (** Get the type of an expression.
@@ -407,3 +407,13 @@ let refr_type r =
 	| AT (t, _)
 	| RLINE (t, _, _)	-> t
 	
+(* deprecated *)
+let prints s = fun out -> output_stmt out s
+let printe e = fun out -> output_expr out e
+let printr r = fun out -> output_refr out r
+
+(* easy %a printf output *)
+let outs = output_stmt
+let oute = output_expr
+let outr = output_refr
+

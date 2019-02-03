@@ -27,3 +27,4 @@ parser.ml
 parser.mli
 parser.output
 scc
+tests/*.out
