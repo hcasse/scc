@@ -1,0 +1,2 @@
+[4mchar *p = &i;[24m
+ERROR: tests/init-ptr-err.c:2:0: cannot convert initializer of type ptr(int) to ptr(char)!

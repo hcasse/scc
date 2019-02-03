@@ -1,0 +1,29 @@
+VARDECL(int, i, NONE)
+
+VARDECL(float, x, NONE)
+
+VARDECL(char, c, NONE)
+
+VARDECL(int, i1, CST(int, 3))
+
+VARDECL(float, x1, CST(float, 1.100000))
+
+VARDECL(char, c1, CAST(char, CST(int, 97)))
+
+VARDECL(ptr(void), vp, NONE)
+
+VARDECL(ptr(char), cp, NONE)
+
+VARDECL(ptr(int), ip, NONE)
+
+VARDECL(ptr(float), fp, NONE)
+
+VARDECL(ptr(char), cp1, ADDR(ptr(char), ID(char, "c")))
+
+VARDECL(ptr(int), ip1, ADDR(ptr(int), ID(int, "i")))
+
+VARDECL(ptr(float), fp1, ADDR(ptr(float), ID(float, "x")))
+
+VARDECL(ptr(void), vp1, CAST(ptr(void), ADDR(ptr(char), ID(char, "c"))))
+
+Success!

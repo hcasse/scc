@@ -1,0 +1,2 @@
+int *p = &[4mj[24m;
+ERROR: tests/init-exist-err.c:2:10: 'j' undeclared!
