@@ -210,6 +210,8 @@ side_effect:
 |	refr MINUS_MINUS right
 		{ sline (join_loc (refr_loc $1) (loc $3 $3))
 			(SET(VOID, $1, BINOP(VOID, SUB, REF(VOID, $1), CST(VOID, INTV(1))))) }
+|	simple_expr LPAR opt_args RPAR right
+		{ sline (join_loc (expr_loc $1) (loc $5 $5)) (CALL ($1, $3)) }
 ;
 
 decls: decl

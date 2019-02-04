@@ -127,7 +127,7 @@ let check decs =
 			()
 		| VARDECL (l, t, i, e) ->
 			if not (is_cst e)
-			then error l (fun out -> fprintf out "should be constant!")
+			then fatal l (fun out -> fprintf out "should be constant!")
 	) decs;
 	let decs = map (fun d ->
 		match d with

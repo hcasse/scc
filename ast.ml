@@ -21,7 +21,7 @@
 open Common
 open List
 
-let display_all = false
+let display_all = true
 
 type unop =
 	| NOT
@@ -212,8 +212,8 @@ and output_s out t s =
 	let rec printt n =
 		if n = 0 then () else begin outs out "  "; printt (n - 1) end in
 	let p = outs out in
-	let pi = printt t; p in
-	let pe = printt (t + 1); output_expr out in
+	let pi = (*Printf.fprintf out "%d" t;*) printt t; p in
+	let pe = (*Printf.fprintf out "%d" (t + 1);*) printt (t + 1); output_expr out in
 	let ps = output_s out (t + 1) in
 	
 	match s with
