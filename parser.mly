@@ -72,6 +72,7 @@ let check decs =
 %token ELSE
 %token FOR
 %token IF
+%token RETURN
 %token SWITCH
 %token WHILE
 
@@ -82,6 +83,7 @@ let check decs =
 %nonassoc ELSE
 %nonassoc EXCLAM
 %nonassoc AND
+%nonassoc LPAR
 
 %left EQ
 %left AND_AND PIPE_PIPE
@@ -180,6 +182,10 @@ stmt:
 		{ sline (loc $2 $8) (DOWHILE($3, $6)) }
 |	FOR LPAR opt_side_effect SEMI opt_expr SEMI opt_side_effect RPAR stmt
 		{ SEQ($3, WHILE($5, SEQ($9, $7))) }
+|	RETURN left expr SEMI
+		{ sline (join_loc (loc $2 $2) (expr_loc $3)) (RETURN (VOID, $3)) } 
+|	RETURN left right SEMI
+		{ sline (loc $2 $3) (RETURN (VOID, NONE)) }
 ;	
 
 opt_side_effect:
@@ -231,6 +237,8 @@ opt_expr:	/* empty */
 expr:
 	simple_expr
 		{ $1 }
+|	expr LPAR opt_args right RPAR
+		{ eline (join_loc (expr_loc $1) (loc $4 $4)) (ECALL (VOID, $1, $3)) }
 |	PLUS expr
 		{ $2 }
 |	expr PLUS expr
@@ -289,6 +297,25 @@ refr:
 		{ rline (loc $2 $3) (ID (VOID, $1)) }
 |	STAR left expr
 		{ rline (join_loc (loc $2 $2) (expr_loc $3)) (AT (VOID, $3)) }
+;
+
+opt_args:
+	/* empty */
+		{ [] }
+|	args
+		{ List.rev $1 }
+;
+
+args:
+	arg
+		{ [$1] }
+|	args COM arg
+		{ $3::$1 }
+;
+
+arg:
+	expr
+		{ $1 }
 ;
 
 free_type:

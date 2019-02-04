@@ -84,10 +84,13 @@ and rename_decs ds env =
 				(h, env)
 			| VARDECL (l, t, i, e)	->
 				(VARDECL (l, t, i, rename_expr e env), add_env env i i)
-			| FUNDECL (loc, FUN(rt, ps), i, s)	->
-				(FUNDECL (loc, FUN(rt, ps), i, rename_stmt s (declare_params ps env)), env)
-			| FUNDECL _ ->
-				failwith "function without function type" in
+			| FUNDECL (loc, t, i, s)	->
+				match t with
+				| FUN(rt, ps) ->
+					(FUNDECL (loc, FUN(rt, ps), i, rename_stmt s (declare_params ps env)),
+					add_env env i i)
+				| _ ->
+					failwith "function without function type" in
 		h::(rename_decs t env)
 
 and rename_stmt s env =
@@ -116,6 +119,7 @@ and rename_stmt s env =
 	| SLINE (l, s)		-> handle_error l (fun _ -> SLINE (l, rename_stmt s  env))
 	| BLOCK s			-> BLOCK (rename_stmt s (block_env env ""))
 	| CALL (f, es)		-> CALL (rename_expr f env, map (fun a -> rename_expr a env) es)
+	| RETURN (t, e)		-> RETURN (t, rename_expr e env)
 
 and rename_expr e env =
 	match e with
@@ -412,11 +416,20 @@ and type_stmt s env =
 	
 	| CALL (e, es) ->
 		let e = type_expr e env in
-		match expr_type e with
+		(match expr_type e with
 		| FUN (rt, ps) ->
 			CALL(e, type_args ps es env)
 		| _ ->
-			raise (PreError (fun out -> fprintf out "Cannot call this value."))
+			raise (PreError (fun out -> fprintf out "Cannot call this value.")))
+
+	| RETURN (_, e) ->
+		let e = type_expr e env in
+		let t = expr_type e in
+		let ft = get_env env "$return" in
+		if t = ft then RETURN (t, e) else
+		if auto_convert ft t then RETURN (ft, CAST(ft, e))
+		else pre_error (fun out -> fprintf out "cannot convert to function return type")
+
 
 and type_refr r env =
 	match r with

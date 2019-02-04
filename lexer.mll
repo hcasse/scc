@@ -65,6 +65,7 @@ parse	";"			{ SEMI }
 |		"for"		{ FOR }
 |		"if"		{ IF }
 |		"int"		{ TYPE Common.INT }
+|		"return"	{ RETURN }
 |		"switch"	{ SWITCH }
 |		"void"		{ TYPE Common.VOID }
 |		"while"		{ WHILE }

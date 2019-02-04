@@ -62,6 +62,7 @@ type stmt =
 	| SLINE of loc_t * stmt
 	| BLOCK of stmt
 	| CALL of expr * expr list
+	| RETURN of type_t * expr
 	
 and expr =
 	| NONE
@@ -287,6 +288,12 @@ and output_s out t s =
 		outs out ", [";
 		ignore (List.fold_left (fun s e -> outs out s; output_expr out e; ", ") "" es);
 		outs out "])"
+	| RETURN (t, e) ->
+		outs out "RETURN(";
+		output_type out t;
+		outs out ", ";
+		output_expr out e;
+		outs out ")"
 	
 	
 let output_decl out d =
@@ -373,7 +380,8 @@ let rec stmt_loc s =
 	| SLINE (l, _)		-> l
 	| BLOCK s			-> stmt_loc s
 	| CALL (e, es)		-> fold_left (fun l e -> join_loc l (expr_loc e)) (expr_loc e) es
-	
+	| RETURN _			-> null_loc
+
 
 (** Generate error message including error information.
 	@param e	Expression wher the error applies.
