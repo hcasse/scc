@@ -20,6 +20,8 @@
 open Common 
 
 let opts = [
+	("-stop-after-typing", Arg.Set stop_after_typing, "Stop compiling after typing pass.");
+	("-stop-after-syntax", Arg.Set stop_after_syntax, "Stop compiling after syntactic analysis.")
 ]
 let  doc = "SIAME C Compiler"
 

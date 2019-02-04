@@ -17,6 +17,7 @@
 %{
 open Common
 open Ast
+open Printf
 
 let loc f l		= (!current_source, f, l)
 let eline l e	= ELINE (VOID, l, e)
@@ -47,9 +48,12 @@ let binop op e1 e2 =
 	eline (join_loc (expr_loc e1) (expr_loc e2)) (BINOP (VOID, op, e1, e2))
 
 let check decs =
-	let decs = Sem.check_names decs in
-	let decs = Sem.check_types decs in
-	let decs = Cst.check decs in
+	let decs = if !stop_after_syntax then decs
+		else
+			let decs = Sem.check_names decs in
+			let decs = Sem.check_types decs in
+			if !stop_after_typing then decs
+			else Cst.check decs in
 	decs
 %}
 

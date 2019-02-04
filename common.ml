@@ -277,3 +277,11 @@ let handle_error l f =
 (* easy printf output *)
 let outt = output_type
 let outl = output_loc
+
+
+(** If true, make the compiler to stop and dump after typing pass. *)
+let stop_after_typing = ref false
+
+
+(** If true, stop the compiler just after syntactic analysis. *)
+let stop_after_syntax = ref false

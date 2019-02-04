@@ -77,8 +77,23 @@ parse	";"			{ SEMI }
 |		flt as s	{ FLOAT (float_of_string s) }
 |		'\'' ([^ '\\'] as c) '\''
 					{ INT (Char.code c) }
+|		"'\\n"		{ INT (Char.code '\n') }
+|		"'\\r"		{ INT (Char.code '\r') }
+|		"'\\t"		{ INT (Char.code '\t') }
+|		"'\\0"		{ INT 0 }
+|		"'\\\\"		{ INT (Char.code '\\') }
+
+|		"/*"		{ com lexbuf }
+|		"//"		{ ecom lexbuf }
 
 |		space		{ scan lexbuf }
 |		_ as c		{ raise (Common.LexerError (fun out -> Printf.fprintf out "unknown character '%c'" c)) }
 |		eof			{ EOF }
 
+and com =
+parse	"*/"		{ scan lexbuf }
+|		_			{ com lexbuf }
+
+and ecom =
+parse	"\n"		{ scan lexbuf }
+|		_			{ ecom lexbuf }
