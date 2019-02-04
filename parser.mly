@@ -43,6 +43,9 @@ let rec make_decs bt decs s =
 	| [(t, i, d)]	-> make t i d s
 	| (t, i, d)::n	-> make t i d (make_decs bt n s)
 
+let binop op e1 e2 =
+	eline (join_loc (expr_loc e1) (expr_loc e2)) (BINOP (VOID, op, e1, e2))
+
 let check decs =
 	let decs = Sem.check_names decs in
 	let decs = Sem.check_types decs in
@@ -60,7 +63,7 @@ let check decs =
 %token PLUS MINUS STAR SLASH PERCENT
 %token LT_LT GT_GT
 %token LPAR RPAR LBRACE, RBRACE
-%token AND_AND PIPE_PIPE EXCLAM AND
+%token AND_AND PIPE_PIPE EXCLAM AND PIPE CIRC
 %token COM
 %token SEMI
 %token COL
@@ -82,12 +85,15 @@ let check decs =
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 %nonassoc EXCLAM
-%nonassoc AND
 %nonassoc LPAR
 
 %left EQ
 %left AND_AND PIPE_PIPE
-%left EQ_EQ EXCLAM_EQ LT LT_EQ GT GT_EQ
+%left PIPE
+%left CIRC
+%left AND
+%left EQ_EQ EXCLAM_EQ
+%left LT LT_EQ GT GT_EQ
 %left LT_LT GT_GT
 %left PLUS MINUS
 %left STAR SLASH PERCENT
@@ -239,38 +245,42 @@ expr:
 		{ $1 }
 |	expr LPAR opt_args right RPAR
 		{ eline (join_loc (expr_loc $1) (loc $4 $4)) (ECALL (VOID, $1, $3)) }
-|	PLUS expr
-		{ $2 }
 |	expr PLUS expr
-		{ BINOP(VOID, ADD, $1, $3) }
+		{ binop ADD $1 $3 }
 |	expr MINUS expr
-		{ BINOP(VOID, SUB, $1, $3) }
+		{ binop SUB $1 $3 }
 |	expr STAR expr
-		{ BINOP(VOID, MUL, $1, $3) }
+		{ binop MUL $1 $3 }
 |	expr SLASH expr
-		{ BINOP(VOID, DIV, $1, $3) }
+		{ binop DIV $1 $3 }
 |	expr PERCENT expr
-		{ BINOP(VOID, MOD, $1, $3) }
+		{ binop MOD $1 $3 }
 |	expr EQ_EQ expr
-		{ BINOP(VOID, EQ, $1, $3) }
+		{ binop EQ $1 $3 }
 |	expr EXCLAM_EQ expr
-		{ BINOP(VOID, NE, $1, $3) }
+		{ binop NE $1 $3 }
 |	expr LT expr
-		{ BINOP(VOID, LT, $1, $3) }
+		{ binop LT $1 $3 }
 |	expr LT_EQ expr
-		{ BINOP(VOID, LE, $1, $3) }
+		{ binop LE $1 $3 }
 |	expr GT expr
-		{ BINOP(VOID, GT, $1, $3) }
+		{ binop GT $1 $3 }
 |	expr GT_EQ expr
-		{ BINOP(VOID, GE, $1, $3) }
+		{ binop GE $1 $3 }
 |	expr AND_AND expr
-		{ BINOP(VOID, LOG_AND, $1, $3) }
+		{ binop LOG_AND $1 $3 }
 |	expr PIPE_PIPE expr
-		{ BINOP(VOID, LOG_OR, $1, $3) }
+		{ binop LOG_OR $1 $3 }
 |	expr LT_LT expr
-		{ BINOP(VOID, SHL, $1, $3) }
+		{ binop SHL $1 $3 }
 |	expr GT_GT expr
-		{ BINOP(VOID, SHR, $1, $3) }
+		{ binop SHR $1 $3 }
+|	expr AND expr
+		{ binop BIT_AND $1 $3 }
+|	expr PIPE expr
+		{ binop BIT_OR $1 $3 }
+|	expr CIRC expr
+		{ binop XOR $1 $3 }
 ;
 
 simple_expr:
@@ -282,14 +292,14 @@ simple_expr:
 		{ REF(VOID, $1) }
 |	LPAR left expr RPAR right
 		{ eline (loc $2 $5) $3 }
-|	AND left refr
-		{ eline (join_loc (loc $2 $2) (refr_loc $3)) (ADDR (VOID, $3)) }
 |	LPAR left free_type RPAR simple_expr
 		{ ELINE(VOID, join_loc (!current_source, $2, $2) (expr_loc $5), CAST($3, $5)) }
 |	EXCLAM left simple_expr
 		{ ELINE(VOID, join_loc (!current_source, $2, $2) (expr_loc $3), UNOP (VOID, NOT, $3)) }
 |	MINUS left simple_expr
 		{ ELINE(VOID, join_loc (!current_source, $2, $2) (expr_loc $3), UNOP (VOID, NEG, $3)) }
+|	AND left refr
+		{ eline (join_loc (loc $2 $2) (refr_loc $3)) (ADDR (VOID, $3)) }
 ;
 
 refr:

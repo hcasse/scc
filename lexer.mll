@@ -50,11 +50,13 @@ parse	";"			{ SEMI }
 |		">="		{ GT_EQ }
 |		"&"			{ AND }
 |		"&&"		{ AND_AND }
+|		"|"			{ PIPE }
 |		"||"		{ PIPE_PIPE }
 |		"++"		{ PLUS_PLUS }
 |		"--"		{ MINUS_MINUS }
 |		"<<"		{ LT_LT }
 |		">>"		{ GT_GT }
+|		"^"			{ CIRC }
 
 |		"case"		{ CASE }
 |		"char"		{ TYPE Common.CHAR }
