@@ -45,11 +45,8 @@ parser.cmi: common.cmo
 # packaging
 DIST = \
 	$(SOURCES) \
-	*.mly \
-	*.mll \
-	samples \
 	Makefile \
-	karel.txt
+	tests/
 ARC=scc
 
 
@@ -59,6 +56,11 @@ dist:
 	cp -R $(DIST) $(ARC)
 	tar cvfz $(ARC).tgz $(ARC)
 	cd $(ARC); make
+
+DELIVER_NAME = deliver-$(shell date "+%Y.%m.%d")
+DELIVER_FILES = $(sort $(DIST))
+deliver:
+	tar cvfz $(DELIVER_NAME).tgz $(DELIVER_FILES)
 
 
 # testing

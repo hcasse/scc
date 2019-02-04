@@ -28,3 +28,4 @@ parser.mli
 parser.output
 scc
 tests/*.out
+deliver-*.tgz
