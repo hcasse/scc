@@ -96,8 +96,7 @@ and rename_decs ds env =
 and rename_stmt s env =
 
 	let rec name n i env =
-		printf "=> %s\n" n;
-		if (global env n) = "" then add_env env i n else
+		if (global env n) = "" then n else
 		name (n ^ "$") i env in
 
 	let declare i env =
@@ -107,7 +106,7 @@ and rename_stmt s env =
 
 	match s with
 	| NOP -> NOP
-	| DECLARE (t, i, s) -> DECLARE(t, i, rename_stmt s (declare i env))
+	| DECLARE (t, i, s) -> let ni = declare i env in DECLARE(t, ni, rename_stmt s (add_env env i ni))
 	| SET (t, r, v)		-> SET(t, rename_refr r env, rename_expr v env) 
 	| SEQ (s1, s2)		-> SEQ(rename_stmt s1 env, rename_stmt s2 env)
 	| IF (c, s1, s2)	-> IF(rename_expr c env, rename_stmt s1 env, rename_stmt s2 env)
@@ -152,6 +151,7 @@ and rename_refr r env =
 	@param ft	Type to convert from.
 	@return		True if the type ft can be automatically converted from fr to tt. *)
 let auto_convert tt ft =
+	printf "tt=%a ft=%a\n" outt tt outt ft;
 	if tt = ft then true else
 	match (tt, ft) with
 	| (INT, CHAR)
@@ -376,7 +376,10 @@ and type_stmt s env =
 		NOP
 		
 	| DECLARE (t, i, s)	->
-		DECLARE (t, i, type_stmt s (add_env env i t))
+		printf "declare %s: %a\n" i outt t;
+		let r = DECLARE (t, i, type_stmt s (add_env env i t)) in
+		printf "end declare %s: %a\n" i outt t;
+		r
 	
 	| SET (_, r, e) ->
 		let e = type_expr e env in
@@ -385,7 +388,7 @@ and type_stmt s env =
 		let rt = refr_type r in
 		if et = rt then SET(rt, r, e) else
 		if auto_convert rt et then SET(rt, r, CAST(rt, e)) else
-		raise (PreError (fun out -> fprintf out "Type error in assignment.") )
+		pre_error (fun out -> fprintf out "Type error in assignment.")
 	
 	| SEQ (s1, s2) ->
 		SEQ (type_stmt s1 env, type_stmt s2 env)
@@ -434,7 +437,9 @@ and type_stmt s env =
 and type_refr r env =
 	match r with
 	| NOREF				-> NOREF
-	| ID (_, i) 		-> ID(global env i, i)
+	| ID (_, i) 		->
+		printf "%s: %a\n" i outt (get_env env i);
+		ID(get_env env i, i)
 	| AT (_, e)			-> let e = type_expr e env in AT (expr_type e, e)
 	| RLINE (_, l, r)	-> handle_error l (fun _ -> let r = type_refr r env in RLINE (refr_type r, l, r)) 
 

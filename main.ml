@@ -21,7 +21,9 @@ open Common
 
 let opts = [
 	("-stop-after-typing", Arg.Set stop_after_typing, "Stop compiling after typing pass.");
-	("-stop-after-syntax", Arg.Set stop_after_syntax, "Stop compiling after syntactic analysis.")
+	("-stop-after-syntax", Arg.Set stop_after_syntax, "Stop compiling after syntactic analysis.");
+	("-stop-after-sem",    Arg.Set stop_after_sem,    "Stop compiling after semantic analysis.");
+	("-output-c", Arg.Set output_c, "Output re-synthetized C instead of AST")
 ]
 let  doc = "SIAME C Compiler"
 

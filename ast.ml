@@ -20,8 +20,9 @@
 
 open Common
 open List
+open Printf
 
-let display_all = true
+let display_all = false
 
 type unop =
 	| NOT
@@ -206,15 +207,15 @@ and output_binop out op =
 		| SHL		-> "SHL"
 		| SHR		-> "SHR")
 
-and output_stmt out s = output_s out 0 s
+and output_stmt out s = output_s out 1 s
 
 and output_s out t s =
-	let rec printt n =
-		if n = 0 then () else begin outs out "  "; printt (n - 1) end in
+	let rec indent n =
+		if n = 0 then () else begin outs out "  "; indent (n - 1) end in
 	let p = outs out in
-	let pi = (*Printf.fprintf out "%d" t;*) printt t; p in
-	let pe = (*Printf.fprintf out "%d" (t + 1);*) printt (t + 1); output_expr out in
-	let ps = output_s out (t + 1) in
+	let pi = fun s -> (* fprintf out "!%d" t; *) indent t; p s in
+	let pe = fun e -> (* fprintf out "?%d" (t + 1); *) indent (t + 1); output_expr out e in
+	let ps = fun s -> output_s out (t + 1) s in
 	
 	match s with
 	| NOP ->
@@ -241,7 +242,6 @@ and output_s out t s =
 		p ")"
 	| IF (e, s1, s2) ->
 		pi "IF(\n";
-		pi "";
 		pe e;
 		p ",\n";
 		ps s1;
@@ -250,7 +250,6 @@ and output_s out t s =
 		p ")"
 	| WHILE (e, s) ->
 		pi "WHILE(\n";
-		pi "";
 		pe e;
 		p ",\n";
 		ps s;
@@ -259,7 +258,6 @@ and output_s out t s =
 		pi "DOWHILE(\n";
 		ps s;
 		p ",\n";
-		pi "";
 		pe e;
 		p ")"
 	| CASE e ->
@@ -289,10 +287,10 @@ and output_s out t s =
 		ignore (List.fold_left (fun s e -> outs out s; output_expr out e; ", ") "" es);
 		outs out "])"
 	| RETURN (t, e) ->
-		outs out "RETURN(";
+		pi "RETURN(";
 		output_type out t;
-		outs out ", ";
-		output_expr out e;
+		outs out ",\n";
+		pe e;
 		outs out ")"
 	
 	
@@ -317,7 +315,11 @@ let output_decl out d =
 		p ",\n";
 		output_stmt out s;
 		p ")\n\n"
-		
+
+let output_decls out ds =
+	iter (output_decl out) ds
+	
+
 let print_stmt = output_stmt stdout
 let print_expr = output_expr stdout
 let print_refr = output_refr stdout

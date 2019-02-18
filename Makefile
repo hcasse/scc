@@ -8,6 +8,9 @@ SOURCES = \
 	ast.ml \
 	sem.ml \
 	cst.ml \
+	cout.ml \
+	quad.ml \
+	comp.ml \
 	parser.mly \
 	lexer.mll \
 	main.ml
@@ -24,10 +27,14 @@ scc: $(OBJECTS)
 
 ast.cmo: common.cmo
 lexer.cmo: parser.cmi common.cmo
-main.cmo: parser.cmi common.cmo ast.cmo
-parser.cmo: parser.cmi common.cmo ast.cmo sem.cmo
+main.cmo: parser.cmi parser.cmo lexer.cmo common.cmo ast.cmo
+parser.cmo: parser.cmi common.cmo ast.cmo sem.cmo comp.cmo
 sem.cmo: common.cmo ast.cmo
 parser.cmi: common.cmo
+comp.cmo: quad.cmo ast.cmo
+cout.cmo: common.cmo ast.cmo
+cst.cmo: ast.cmo sem.cmo
+quad.cmo: common.cmo
 
 %.cmo: %.ml
 	$(OCAMLC) -c $< -o $@
@@ -46,7 +53,8 @@ parser.cmi: common.cmo
 DIST = \
 	$(SOURCES) \
 	Makefile \
-	tests/
+	tests/*.c \
+	tests/*.ref
 ARC=scc
 
 

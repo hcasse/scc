@@ -47,14 +47,22 @@ let rec make_decs bt decs s =
 let binop op e1 e2 =
 	eline (join_loc (expr_loc e1) (expr_loc e2)) (BINOP (VOID, op, e1, e2))
 
-let check decs =
-	let decs = if !stop_after_syntax then decs
-		else
-			let decs = Sem.check_names decs in
-			let decs = Sem.check_types decs in
-			if !stop_after_typing then decs
-			else Cst.check decs in
-	decs
+
+let process decs =
+
+	let output decs =
+		if !output_c then Cout.decls stdout decs
+		else output_decls stdout decs in
+
+	if !stop_after_syntax then output decs else
+	let decs = Sem.check_names decs in
+	let decs = Sem.check_types decs in
+	if !stop_after_typing then output decs else
+	let decs = Cst.check decs in
+	if !stop_after_sem then output decs else
+	let unit = Comp.t_d decs in
+	Quad.output_unit stdout unit
+	
 %}
 
 %token<string> ID
@@ -108,7 +116,7 @@ let check decs =
 %%
 
 prog:	opt_defs EOF
-	{ List.iter print_decl (check $1) }
+	{ process $1 }
 ;
 
 opt_defs:	/* empty */
@@ -129,7 +137,7 @@ def:
 |	TYPE left decls right SEMI
 		{ List.map (fun (t, n, e) -> VARDECL (loc $2 $4, set_type $1 t, n, e)) $3 }
 |	TYPE left decl right LBRACE opt_stmts RBRACE
-		{ let (t, n, _) = $3 in [FUNDECL (loc $2 $4, set_type $1 t, n, $6)] }
+		{ let (t, n, _) = $3 in [FUNDECL (loc $2 $4, set_type $1 t, n, BLOCK($6))] }
 ;
 
 opt_params:	/* empty */
