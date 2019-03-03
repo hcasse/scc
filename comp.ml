@@ -216,7 +216,7 @@ let t_d ds =
 		| FUNDECL (_, FUN (rt, ps), i, s) ->
 			let env', _ = fold_left param (env, 0) ps in
 			let env', fsize = decl s (env', 0) in
-			(code @ (t_stmt s env'), data, env)
+			(code @ [LABEL i] @ (t_stmt s env') @ [RETURN], data, env)
 		| FUNDECL _ ->
 			failwith "Comp.decs"
 		in

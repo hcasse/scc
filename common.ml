@@ -291,3 +291,6 @@ let stop_after_sem = ref false
 
 (** Output re-synthesized to C. *)
 let output_c = ref false
+
+(** Stop the compilation after translation. *)
+let stop_after_trans = ref false

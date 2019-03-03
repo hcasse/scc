@@ -151,7 +151,7 @@ and rename_refr r env =
 	@param ft	Type to convert from.
 	@return		True if the type ft can be automatically converted from fr to tt. *)
 let auto_convert tt ft =
-	printf "tt=%a ft=%a\n" outt tt outt ft;
+	(*printf "tt=%a ft=%a\n" outt tt outt ft;*)
 	if tt = ft then true else
 	match (tt, ft) with
 	| (INT, CHAR)
@@ -376,9 +376,9 @@ and type_stmt s env =
 		NOP
 		
 	| DECLARE (t, i, s)	->
-		printf "declare %s: %a\n" i outt t;
+		(* printf "declare %s: %a\n" i outt t; *)
 		let r = DECLARE (t, i, type_stmt s (add_env env i t)) in
-		printf "end declare %s: %a\n" i outt t;
+		(* printf "end declare %s: %a\n" i outt t; *)
 		r
 	
 	| SET (_, r, e) ->
@@ -438,7 +438,7 @@ and type_refr r env =
 	match r with
 	| NOREF				-> NOREF
 	| ID (_, i) 		->
-		printf "%s: %a\n" i outt (get_env env i);
+		(*printf "%s: %a\n" i outt (get_env env i);*)
 		ID(get_env env i, i)
 	| AT (_, e)			-> let e = type_expr e env in AT (expr_type e, e)
 	| RLINE (_, l, r)	-> handle_error l (fun _ -> let r = type_refr r env in RLINE (refr_type r, l, r)) 

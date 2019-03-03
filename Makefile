@@ -11,6 +11,7 @@ SOURCES = \
 	cout.ml \
 	quad.ml \
 	comp.ml \
+	select.ml \
 	parser.mly \
 	lexer.mll \
 	main.ml
@@ -28,13 +29,14 @@ scc: $(OBJECTS)
 ast.cmo: common.cmo
 lexer.cmo: parser.cmi common.cmo
 main.cmo: parser.cmi parser.cmo lexer.cmo common.cmo ast.cmo
-parser.cmo: parser.cmi common.cmo ast.cmo sem.cmo comp.cmo
+parser.cmo: parser.cmi common.cmo ast.cmo sem.cmo comp.cmo select.ml
 sem.cmo: common.cmo ast.cmo
 parser.cmi: common.cmo
 comp.cmo: quad.cmo ast.cmo
 cout.cmo: common.cmo ast.cmo
 cst.cmo: ast.cmo sem.cmo
 quad.cmo: common.cmo
+select.cmo: quad.cmo
 
 %.cmo: %.ml
 	$(OCAMLC) -c $< -o $@

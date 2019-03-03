@@ -61,7 +61,8 @@ let process decs =
 	let decs = Cst.check decs in
 	if !stop_after_sem then output decs else
 	let unit = Comp.t_d decs in
-	Quad.output_unit stdout unit
+	if !stop_after_trans then Quad.output_unit stdout unit else
+	Select.output_prog stdout (Select.prog unit)
 	
 %}
 
