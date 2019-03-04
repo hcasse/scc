@@ -19,12 +19,12 @@ type prog = inst list
 
 
 (* Generation of instructions. *)
-let op_rrr code ri rj rk = (sprintf "\t%s $r, $r, $r" code, [WREG ri, RREG rj, RREG rk])
+let op_rrr code ri rj rk = (sprintf "\t%s $r, $r, $r" code, [WREG ri; RREG rj; RREG rk])
 let add ri rj rk = op_rrr "add" ri rj rk
 let sub ri rj rk = op_rrr "sub " ri rj rk
 (* Ajoutez ici les instructions manquantes. *)
 
-let op_rri code ri rj k = (sprintf "\t%s $r, $r, #%d" code k, [WREG ri, RREG rj])
+let op_rri code ri rj k = (sprintf "\t%s $r, $r, #%d" code k, [WREG ri; RREG rj])
 let addi ri rj k = op_rri "add" ri rj k
 let addi ri rj k = op_rri "sub" ri rj k
 (* Ajoutez ici les instructions manquantes. *)
