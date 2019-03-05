@@ -24,9 +24,9 @@ let rec eval_env e env =
 		match r with
 		| ID (_, i) ->
 			let v = get_env env i in
-			if v = NONE then failwith "référence non constante"
+			if v = NONE then failwith "référence non constante (1)"
 			else v
-		| _ -> failwith "référence non constante" in
+		| _ -> failwith "référence non constante (2)" in
 
 	match e with
 	| NONE
@@ -134,7 +134,7 @@ let check decs =
 		| NODECL ->
 			d
 		| VARDECL (l, t, i, e) ->
-			VARDECL (l, t, i, reduce_expr e)
+			VARDECL (l, t, i, eval e)
 		| FUNDECL (l, t, i, s) ->
 			FUNDECL (l, t, i, reduce_stmt s)
 	) decs in

@@ -11,8 +11,8 @@ char *cp;
 int *ip;
 float *fp;
 
-char *cp1 = &c;
+/*char *cp1 = &c;
 int *ip1 = &i;
 float *fp1 = &x;
-void *vp1 = &c;
+void *vp1 = &c;*/
 

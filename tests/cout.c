@@ -8,8 +8,8 @@ int x = 1 + 1 + 1;
 int y = 1 - 1 - 1;
 int z = 1 - (1 + 1);
 
-int n = - - -x;
-int m = 1 + - -y;
+int n = - - -3;
+int m = 1 + - -5;
 
 void main() {
 	int i;

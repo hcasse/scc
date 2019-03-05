@@ -80,6 +80,7 @@ let make_data t i e =
 	| INT, CST (_, INTV k)		-> QINT (i, k)
 	| FLOAT, NONE				-> QFLOAT (i, 0.)
 	| FLOAT, CST (_, FLOATV x)	-> QFLOAT (i, x)
+	| PTR _, NONE				-> QINT (i, 0)
 	| _							-> failwith "Comp.make_data"
 
 
