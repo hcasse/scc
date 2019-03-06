@@ -57,6 +57,7 @@ parse	";"			{ SEMI }
 |		"<<"		{ LT_LT }
 |		">>"		{ GT_GT }
 |		"^"			{ CIRC }
+|		"~"			{ TILDE }
 
 |		"case"		{ CASE }
 |		"char"		{ TYPE Common.CHAR }

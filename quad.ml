@@ -59,6 +59,8 @@ type quad =
 	| RETURN									(** subrogram return *)
 	| LOAD of type_t * vreg * vreg				(** vi <- M_t[vj] *)
 	| STORE of type_t * vreg * vreg				(** M_t[vi] <- vj *)
+	| QPUSH of vreg								(** push vi *)
+	| QPOP of vreg								(** pop vi *)
 
 
 (** Representation of data in memory. *)
@@ -103,9 +105,9 @@ let flt_vreg_cnt = ref 1000000
 (** Generate a new virtual register. *)
 let new_tmp t =
 	match t with
-	| VOID
-	| FUN _ ->
+	| VOID ->
 		failwith "Quad: new_tmp"
+	| FUN _
 	|	INT
 	|	CHAR
 	|	PTR _ ->
@@ -114,6 +116,22 @@ let new_tmp t =
 	|	FLOAT ->
 		incr flt_vreg_cnt;
 		!flt_vreg_cnt
+
+
+(** Output a virtual register.
+	@param out	Output channel.
+	@param v	Virtual register to output. *)
+let output_vreg out v =
+	let outs = output_string out in
+	match v with
+	| 0 -> outs "zr"
+	| 1 -> outs "pc"
+	| 2 -> outs "sp" 
+	| 3 -> outs "fp"
+	| 4 -> outs "vr"
+	| _ -> fprintf out "v%d" v
+
+let outv = output_vreg
 
 
 (** Output a quadruplet.
@@ -131,35 +149,37 @@ let output_quad out q =
 
 	match q with
 	| QNONE					-> output_string out "nop"
-	| QSETI (i, k)			-> fprintf out "v%d <- %d" i k
-	| QSETF (i, x)			-> fprintf out "v%d <- %f" i x
-	| QSETL (i, l)			-> fprintf out "v%d - %s" i l
-	| QSET (t, i, j)		-> fprintf out "v%d <- v%d (%a)" i j outt t
-	| QNEG (t, i, j)		-> fprintf out "v%d <- -v%d (%a)" i j outt t
-	| QINV (t, i, j)		-> fprintf out "v%d <- ~v%d (%a)" i j outt t
-	| QADD (t, i, j, k)		-> fprintf out "v%d <- v%d + v%d (%a)" i j k outt t
-	| QSUB (t, i, j, k)		-> fprintf out "v%d <- v%d - v%d (%a)" i j k outt t
-	| QMUL (t, i, j, k)		-> fprintf out "v%d <- v%d * v%d (%a)" i j k outt t
-	| QDIV (t, i, j, k)		-> fprintf out "v%d <- v%d / v%d (%a)" i j k outt t
-	| QMOD (t, i, j, k)		-> fprintf out "v%d <- v%d %% v%d (%a)" i j k outt t
-	| QSHL (t, i, j, k)		-> fprintf out "v%d <- v%d << v%d (%a)" i j k outt t
-	| QSHR (t, i, j, k)		-> fprintf out "v%d <- v%d >> v%d (%a)" i j k outt t
-	| QAND (t, i, j, k)		-> fprintf out "v%d <- v%d & v%d (%a)" i j k outt t
-	| QOR (t, i, j, k)		-> fprintf out "v%d <- v%d | v%d (%a)" i j k outt t
-	| QXOR (t, i, j, k)		-> fprintf out "v%d <- v%d ^ v%d (%a)" i j k outt t
-	| QCAST (tt, i, ft, j)	-> fprintf out "(%a)v%d <- (%a)v%d" outt tt i outt ft j
+	| QSETI (i, k)			-> fprintf out "%a <- %d" outv i k
+	| QSETF (i, x)			-> fprintf out "%a <- %f" outv i x
+	| QSETL (i, l)			-> fprintf out "%a <- @%s" outv i l
+	| QSET (t, i, j)		-> fprintf out "%a <- %a (%a)" outv i outv j outt t
+	| QNEG (t, i, j)		-> fprintf out "%a <- -%a (%a)" outv i outv j outt t
+	| QINV (t, i, j)		-> fprintf out "%a <- ~%a (%a)" outv i outv j outt t
+	| QADD (t, i, j, k)		-> fprintf out "%a <- %a + %a (%a)" outv i outv j outv k outt t
+	| QSUB (t, i, j, k)		-> fprintf out "%a <- %a - %a (%a)" outv i outv j outv k outt t
+	| QMUL (t, i, j, k)		-> fprintf out "%a <- %a * %a (%a)" outv i outv j outv k outt t
+	| QDIV (t, i, j, k)		-> fprintf out "%a <- %a / %a (%a)" outv i outv j outv k outt t
+	| QMOD (t, i, j, k)		-> fprintf out "%a <- %a %% %a (%a)" outv i outv j outv k outt t
+	| QSHL (t, i, j, k)		-> fprintf out "%a <- %a << %a (%a)" outv i outv j outv k outt t
+	| QSHR (t, i, j, k)		-> fprintf out "%a <- %a >> %a (%a)" outv i outv j outv k outt t
+	| QAND (t, i, j, k)		-> fprintf out "%a <- %a & %a (%a)" outv i outv j outv k outt t
+	| QOR (t, i, j, k)		-> fprintf out "%a <- %a | %a (%a)" outv i outv j outv k outt t
+	| QXOR (t, i, j, k)		-> fprintf out "%a <- %a ^ %a (%a)" outv i outv j outv k outt t
+	| QCAST (tt, i, ft, j)	-> fprintf out "(%a)%a <- (%a)%a" outt tt outv i outt ft outv j
 	| LABEL l				-> fprintf out "%s:" l
 	| GOTO l				-> fprintf out "goto %s" l
-	| IFEQ (t, i, j, l)		-> fprintf out "if v%d == v%d (%a) goto %s" i j outt t l
-	| IFNE (t, i, j, l)		-> fprintf out "if v%d != v%d (%a) goto %s" i j outt t l
-	| IFLT (t, i, j, l)		-> fprintf out "if v%d < v%d (%a) goto %s" i j outt t l
-	| IFLE (t, i, j, l)		-> fprintf out "if v%d <= v%d (%a) goto %s" i j outt t l
-	| IFGT (t, i, j, l)		-> fprintf out "if v%d > v%d (%a) goto %s" i j outt t l
-	| IFGE (t, i, j, l)		-> fprintf out "if v%d >= v%d (%a) goto %s" i j outt t l
-	| CALL (t, i, j, vs)	-> fprintf out "v%d <- v%d(%a) (%a)" i j (outp false) vs outt t 
+	| IFEQ (t, i, j, l)		-> fprintf out "if %a == %a (%a) goto %s" outv i outv j outt t l
+	| IFNE (t, i, j, l)		-> fprintf out "if %a != %a (%a) goto %s" outv i outv j outt t l
+	| IFLT (t, i, j, l)		-> fprintf out "if %a < %a (%a) goto %s" outv i outv j outt t l
+	| IFLE (t, i, j, l)		-> fprintf out "if %a <= %a (%a) goto %s" outv i outv j outt t l
+	| IFGT (t, i, j, l)		-> fprintf out "if %a > %a (%a) goto %s" outv i outv j outt t l
+	| IFGE (t, i, j, l)		-> fprintf out "if %a >= %a (%a) goto %s" outv i outv j outt t l
+	| CALL (t, i, j, vs)	-> fprintf out "%a <- %a(%a) (%a)" outv i outv j (outp false) vs outt t 
 	| RETURN				-> fprintf out "return"
-	| LOAD (t, i, j)		-> fprintf out "v%d <-M(%a)[v%d]" i outt t j
-	| STORE (t, i, j)		-> fprintf out "M(%a)[v%d] <- v%d" outt t i j
+	| LOAD (t, i, j)		-> fprintf out "%a <- M(%a)[%a]" outv i outt t outv j
+	| STORE (t, i, j)		-> fprintf out "M(%a)[%a] <- %a" outt t outv i outv j
+	| QPUSH i				-> fprintf out "push %a" outv i
+	| QPOP i				-> fprintf out "pop %a" outv i
 
 
 (** Output the given compilation unit.
@@ -168,9 +188,15 @@ let output_quad out q =
 let output_unit out unit =
 	let (code, data) = unit in
 	output_string out "CODE:\n\t";
-	iter (fun q -> output_quad out q; output_string out "\n") code;
+	iter (fun q ->
+			(match q with
+			| LABEL _	-> ()
+			| _			-> output_char out '\t');
+			output_quad out q;
+			output_string out "\n\t")
+		code;
 	output_string out "\nDATA:\n\t";
-	iter (fun d -> output_data out d; output_string out "\n") data
+	iter (fun d -> output_data out d; output_string out "\n\t") data
 	
 
 let outd = output_data

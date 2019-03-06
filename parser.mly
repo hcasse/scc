@@ -94,11 +94,13 @@ let process decs =
 
 %token PLUS_PLUS
 %token MINUS_MINUS
+%token TILDE
 
 %nonassoc LOWER_THAN_ELSE
 %nonassoc ELSE
 %nonassoc EXCLAM
 %nonassoc LPAR
+%nonassoc TILDE
 
 %left EQ
 %left AND_AND PIPE_PIPE
@@ -313,8 +315,12 @@ simple_expr:
 		{ ELINE(VOID, join_loc (!current_source, $2, $2) (expr_loc $3), UNOP (VOID, NOT, $3)) }
 |	MINUS left simple_expr
 		{ ELINE(VOID, join_loc (!current_source, $2, $2) (expr_loc $3), UNOP (VOID, NEG, $3)) }
+|	PLUS left simple_expr
+		{ ELINE(VOID, join_loc (!current_source, $2, $2) (expr_loc $3), $3) }
 |	AND left refr
 		{ eline (join_loc (loc $2 $2) (refr_loc $3)) (ADDR (VOID, $3)) }
+|	TILDE left simple_expr
+		{ ELINE(VOID, join_loc (!current_source, $2, $2) (expr_loc $3), UNOP (VOID, INV, $3)) }
 ;
 
 refr:

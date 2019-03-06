@@ -63,6 +63,7 @@ let quad q =
 	| LABEL l	-> [(sprintf "%s:" l, [])]
 	| RETURN	-> [("\tmov pc, lr", [])]
 	(** Ajoutez ici les cas manquants. *)
+	| _			-> []
 
 
 (** Translate quads into instructions.

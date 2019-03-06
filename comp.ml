@@ -215,9 +215,28 @@ let t_d ds =
 		| VARDECL (_, t, i, e) ->
 			(code, data @ [make_data t i e], add_env env i (GLOBAL i))
 		| FUNDECL (_, FUN (rt, ps), i, s) ->
-			let env', _ = fold_left param (env, 0) ps in
+			let lr = new_lab () in
+			let env = add_env env i (GLOBAL i) in
+			let env', _ = fold_left param (env, 4) ps in
 			let env', fsize = decl s (env', 0) in
-			(code @ [LABEL i] @ (t_stmt s env') @ [RETURN], data, env)
+			let q =
+				  code
+				@ [
+					LABEL i;
+					QPUSH fp;
+					QSET (INT, fp, sp);
+					QSETI (zr, -fsize);
+					QSUB (INT, sp, sp, zr)
+				]
+				@ (t_stmt s (add_env env' "$return" (GLOBAL lr)))
+				@ [
+					LABEL lr;
+					QSETI (zr, -fsize);
+					QADD (INT, sp, sp, zr);
+					QPOP fp;
+					RETURN
+				] in
+			(q, data, env)
 		| FUNDECL _ ->
 			failwith "Comp.decs"
 		in
