@@ -1,5 +1,6 @@
 (** Module dedicated to the selection of instructions. *)
 
+open Common
 open List
 open Printf
 open Quad
@@ -21,12 +22,12 @@ type prog = inst list
 (* Generation of instructions. *)
 let op_rrr code ri rj rk = (sprintf "\t%s $r, $r, $r" code, [WREG ri; RREG rj; RREG rk])
 let add ri rj rk = op_rrr "add" ri rj rk
-let sub ri rj rk = op_rrr "sub " ri rj rk
+let sub ri rj rk = op_rrr "sub" ri rj rk
 (* Ajoutez ici les instructions manquantes. *)
 
 let op_rri code ri rj k = (sprintf "\t%s $r, $r, #%d" code k, [WREG ri; RREG rj])
 let addi ri rj k = op_rri "add" ri rj k
-let addi ri rj k = op_rri "sub" ri rj k
+let subi ri rj k = op_rri "sub" ri rj k
 (* Ajoutez ici les instructions manquantes. *)
 
 let b lab = (sprintf "\tb %s" lab, [])
@@ -92,17 +93,26 @@ let prog unit =
 let output_inst out i =
 	let (fmt, rs) = i in
 	
+	let rname n =
+		match n with
+		| 0 -> "tmp"
+		| 1 -> "pc"
+		| 2 -> "sp"
+		| 3 -> "fp"
+		| 4 -> "r0"
+		| _	 -> sprintf "r%d" n in
+	
 	let rec rep i rs =
 		if i >= (String.length fmt) then () else
 		match String.get fmt i with
-		| '@'	-> esc (i + 1) rs
+		| '$'	-> esc (i + 1) rs
 		| c		-> output_char out c; rep (i + 1) rs
 	
 	and esc i rs =
 		match (String.get fmt i, rs) with
 		| ('r', (WREG n)::rs)
 		| ('r', (RREG n)::rs) ->
-			(fprintf out "r%d" n; rep (i + 1) rs)
+			(output_string out (rname n); rep (i + 1) rs)
 		| _ ->
 			failwith "Select.output_instr: unknown escape" in
 	
