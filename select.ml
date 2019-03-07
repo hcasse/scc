@@ -30,6 +30,8 @@ let addi ri rj k = op_rri "add" ri rj k
 let subi ri rj k = op_rri "sub" ri rj k
 (* Ajoutez ici les instructions manquantes. *)
 
+let push vi = ("\tstr $r, [sp, #-4]!", [RREG vi])
+let pop vi = ("\tldr $r, [sp], #4", [WREG vi])
 let stmfd_sp rs =
 	(sprintf "\tstmfd sp!, {%s}" (fold_left (fun s r -> if s = "" then "$r" else s ^ ", $r") "" rs),
 	map (fun r -> RREG r) rs)
