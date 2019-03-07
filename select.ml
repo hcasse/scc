@@ -30,6 +30,13 @@ let addi ri rj k = op_rri "add" ri rj k
 let subi ri rj k = op_rri "sub" ri rj k
 (* Ajoutez ici les instructions manquantes. *)
 
+let stmfd_sp rs =
+	(sprintf "\tstmfd sp!, {%s}" (fold_left (fun s r -> if s = "" then "$r" else s ^ ", $r") "" rs),
+	map (fun r -> RREG r) rs)
+let ldmfd_sp rs =
+	(sprintf "\tldmfd sp!, {%s}" (fold_left (fun s r -> if s = "" then "$r" else s ^ ", $r") "" rs),
+	map (fun r -> WREG r) rs)
+
 let b lab = (sprintf "\tb %s" lab, [])
 let b_cnd cnd lab = (sprintf "\tb%s %s" cnd lab, [])
 let b_eq lab = b_cnd "eq" lab
@@ -63,17 +70,47 @@ let quad q =
 	| QNONE 	-> []
 	| LABEL l	-> [(sprintf "%s:" l, [])]
 	| RETURN	-> [("\tmov pc, lr", [])]
+	| QPUSH vi	-> [push vi]
+	| QPOP vi	-> [pop vi]
 	(** Ajoutez ici les cas manquants. *)
 	| _			-> []
 
 
+(** Aggregate multiple pushes in one stm.
+	@param qs	Quads to process.
+	@param rs	Aggregated registers.
+	@return		Instructions. *)
+let rec make_stm qs rs =
+	match qs with
+	| (QPUSH r)::qs
+		-> make_stm qs (r::rs)
+	| _
+		-> (stmfd_sp rs)::(quads qs)
+
+(** Aggregate multiple pops in one stm.
+	@param qs	Quads to process.
+	@param rs	Aggregated registers.
+	@return		Instructions. *)
+and make_ldm qs rs =
+	match qs with
+	| (QPOP r)::qs
+		-> make_ldm qs ((if r = lr then pc else r)::rs)
+	| _
+		-> (ldmfd_sp rs)::(quads qs)
+
 (** Translate quads into instructions.
 	@param qs	Quads to translate.
 	@return		Instructions result of quads translation. *)
-let rec quads qs =
+and quads qs =
 	match qs with
-	| [] 	-> []
-	| q::qs	-> (quad q) @ (quads qs)
+	| [] -> 
+		[]
+	| (QPUSH v)::qs ->
+		make_stm qs [v]
+	| (QPOP v)::qs ->
+		make_ldm qs [v]
+	| q::qs	->
+		(quad q) @ (quads qs)
 
 
 (** Perform selection of instruction in the corresponding unit.
@@ -100,6 +137,7 @@ let output_inst out i =
 		| 2 -> "sp"
 		| 3 -> "fp"
 		| 4 -> "r0"
+		| 5	-> "lr"
 		| _	 -> sprintf "r%d" n in
 	
 	let rec rep i rs =

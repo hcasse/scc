@@ -27,6 +27,10 @@ let fp = 3
 let vr = 4
 
 
+(** Link register (ARM depedent). *)
+let lr = 5
+
+
 (** Representation of quadruplets. *)
 type quad =
 	| QNONE										(** empty quad *)
@@ -95,7 +99,7 @@ let new_lab _ =
 
 
 (** Virtual integer register counter. *)
-let int_vreg_cnt = ref 4
+let int_vreg_cnt = ref 5
 
 
 (** Virtual float register counter. *)

@@ -189,6 +189,58 @@ let rec t_stmt s env =
 	@return		Compilation unit (code, data). *)
 let t_d ds =
 	
+	let rec call_expr e =
+		match e with
+		| NONE
+		| CST _
+			-> false
+		| REF (_, r)
+		| ADDR (_, r)
+			-> call_refr r
+		| UNOP (_, _, e)
+		| ELINE (_, _, e)
+		| CAST (_, e)
+			-> call_expr e
+		| BINOP (_, _, e1, e2)
+			-> (call_expr e1) || (call_expr e2)
+		| ECALL _
+			-> true
+	
+	and call_refr r =
+		match r with
+		| NOREF
+		| ID _
+			-> false
+		| AT (_, e)
+			-> call_expr e
+		| RLINE (_, _, r)
+			-> call_refr r
+	
+	and call_stmt s =
+		match s with
+		| NOP
+		| CASE _
+		| DEFAULT
+			-> false
+		| DECLARE (_, _, s)
+		| SLINE (_, s)
+		| BLOCK s
+			-> call_stmt s
+		| SEQ (s1, s2)
+			-> (call_stmt s1) || (call_stmt s2)
+		| IF (e, s1, s2)
+			-> (call_expr e) || (call_stmt s1) || (call_stmt s2)
+		| WHILE (e, s)
+		| DOWHILE (s, e)
+		| SWITCH(e, s)
+			-> (call_expr e) || (call_stmt s)
+		| SET (_, r, e)
+			->  (call_refr r) || (call_expr e)
+		| RETURN (_, e)
+			-> call_expr e
+		| CALL (e, es)
+			-> true in
+	
 	let param (env, off) (t, i) =
 		(add_env env i (LOCAL off), off + param_size t) in
 	
@@ -215,27 +267,29 @@ let t_d ds =
 		| VARDECL (_, t, i, e) ->
 			(code, data @ [make_data t i e], add_env env i (GLOBAL i))
 		| FUNDECL (_, FUN (rt, ps), i, s) ->
-			let lr = new_lab () in
+			let do_call = call_stmt s in
+			let rlab = new_lab () in
 			let env = add_env env i (GLOBAL i) in
-			let env', _ = fold_left param (env, 4) ps in
+			let env', _ = fold_left param (env, if do_call then 8 else 4) ps in
 			let env', fsize = decl s (env', 0) in
 			let q =
 				  code
+				@ [ LABEL i ]
+				@ (if do_call then [QPUSH lr] else [])
 				@ [
-					LABEL i;
 					QPUSH fp;
 					QSET (INT, fp, sp);
 					QSETI (zr, -fsize);
 					QSUB (INT, sp, sp, zr)
 				]
-				@ (t_stmt s (add_env env' "$return" (GLOBAL lr)))
+				@ (t_stmt s (add_env env' "$return" (GLOBAL rlab)))
 				@ [
-					LABEL lr;
+					LABEL rlab;
 					QSETI (zr, -fsize);
 					QADD (INT, sp, sp, zr);
 					QPOP fp;
-					RETURN
-				] in
+				]
+				@ [if do_call then QPOP lr else RETURN] in
 			(q, data, env)
 		| FUNDECL _ ->
 			failwith "Comp.decs"
