@@ -274,6 +274,20 @@ let handle_error l f =
 		exit 1
 
 
+(** Return the power of n if n is a power of 2.
+	@param n	Number to look.
+	@return		m if n = 2^m, -1 else. *)
+let pow_of_2 n =
+	let rec f n =
+		if n = 0 then -1 else
+		if n land 1 = 1 then
+			if n = 1 then 0 else -1
+		else
+			let p = f (n lsr 1) in
+			if p = -1 then -1 else p + 1 in
+	f n
+
+
 (* easy printf output *)
 let outt = output_type
 let outl = output_loc
