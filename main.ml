@@ -17,16 +17,23 @@
 
 (** Main program of the compiler. *)
 
-open Common 
+open Common
+open List
 
+let files: string list ref = ref []
 let opts = [
-	("-stop-after-typing", Arg.Set stop_after_typing, "Stop compiling after typing pass.");
-	("-stop-after-syntax", Arg.Set stop_after_syntax, "Stop compiling after syntactic analysis.");
-	("-stop-after-sem",    Arg.Set stop_after_sem,    "Stop compiling after semantic analysis.");
-	("-stop-after-trans",  Arg.Set stop_after_trans,  "Stop compiling after quad translation.");
-	("-output-c", Arg.Set output_c, "Output re-synthetized C instead of AST")
+	("-stop-after-typing", 	Arg.Set stop_after_typing, 	"Stop compiling after typing pass.");
+	("-stop-after-syntax", 	Arg.Set stop_after_syntax, 	"Stop compiling after syntactic analysis.");
+	("-stop-after-sem",    	Arg.Set stop_after_sem,    	"Stop compiling after semantic analysis.");
+	("-stop-after-trans",  	Arg.Set stop_after_trans,	"Stop compiling after quad translation.");
+	("-stop-after-select",	Arg.Set stop_after_select,	"Stop compilation after instruction selection.");
+	("-stop-after-cfg",		Arg.Set stop_after_cfg,		"Stop compilatin after CFG bulding.");
+	("-output-c",	 		Arg.Set output_c,			"Output re-synthetized C instead")
 ]
 let  doc = "SIAME C Compiler"
+
+let store f =
+	files := f :: !files
 
 let compile path =
 	try
@@ -39,6 +46,7 @@ let compile path =
 
 let _ = 
 	try
-		Arg.parse opts compile doc
+		Arg.parse opts store doc;
+		iter compile (rev !files)
 	with Exit ->
 		exit 1

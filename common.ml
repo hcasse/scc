@@ -308,3 +308,9 @@ let output_c = ref false
 
 (** Stop the compilation after translation. *)
 let stop_after_trans = ref false
+
+(** Stop the compilation after the instruction selection. *)
+let stop_after_select = ref false
+
+(** Stop the compilation after the CFG building. *)
+let stop_after_cfg = ref false

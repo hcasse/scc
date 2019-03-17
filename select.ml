@@ -1,3 +1,20 @@
+(*	
+ *	This file is part of SCC.
+ *
+ *	SCC is free software: you can redistribute it and/or modify
+ *	it under the terms of the GNU General Public License as published by
+ *	the Free Software Foundation, either version 3 of the License, or
+ *	(at your option) any later version.
+ *
+ *	SCC is distributed in the hope that it will be useful,
+ *	but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *	GNU General Public License for more details.
+ *
+ *	You should have received a copy of the GNU General Public License
+ *	along with SCC.  If not, see <http://www.gnu.org/licenses/>.
+ *)
+
 (** Module dedicated to the selection of instructions. *)
 
 open Common
@@ -119,11 +136,11 @@ and quads qs =
 	@param unit		Unit to work on.
 	@return			Corresponding list of instructions. *)
 let prog unit =
-	let (qs, ds) = unit in
-	  [("\t.text", [])]
-	@ (quads qs)
-	@ [("\n\t.data", [])]
-	@ (data ds)
+	let (fs, ds) = unit in
+	(
+		map (fun (i, qs) -> (i, quads qs)) fs,
+		data ds
+	)
 
 
 (** Output the given instruction (replacing $r by corresponding registers).
@@ -134,12 +151,11 @@ let output_inst out i =
 	
 	let rname n =
 		match n with
-		| 0 -> "tmp"
-		| 1 -> "pc"
-		| 2 -> "sp"
-		| 3 -> "fp"
-		| 4 -> "r0"
-		| 5	-> "lr"
+		| 11 -> "tmp"
+		| 15 -> "pc"
+		| 13 -> "sp"
+		| 12 -> "fp"
+		| 14 -> "lr"
 		| _	 -> sprintf "r%d" n in
 	
 	let rec rep i rs =
@@ -159,9 +175,26 @@ let output_inst out i =
 	rep 0 rs; output_char out '\n'
 
 
+(** Output the given list of instructions.
+	@param out		Output channel.
+	@param insts	Instructions to output. *)
+let output_insts out insts =
+	iter (output_inst out) insts
+
 (** Output the given program to the given channel.
 	@param out	Output channel.
 	@param prog	Program to output. *)
 let output_prog out prog =
-	iter (output_inst out) prog
+	let (fs, ds) = prog in
+	output_inst out ("\t.text", []);
+	iter (fun (_, _, qs) -> iter (output_inst out) qs) fs;
+	output_inst out ("\n\t.data", []);
+	iter (output_inst out) ds
 
+
+(** Select machine instructions in the given CFG.
+	@param g	Quad CFG to select instructions in.
+	@return		Instruction CFG after selection. *)
+let cfg g =
+	let (i, l, g) = g in
+	(i, l, Cfg.replace (fun i v -> quads v) g)

@@ -1,0 +1,6 @@
+
+void main() {
+	int s = 0, i;
+	for(i = 0; i < 10; i++)
+		s = s + i;
+}

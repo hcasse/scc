@@ -12,24 +12,26 @@ type label = string
 type vreg = int
 
 (** Null register *)
-let zr = 0
+let zr = 11
 
 (** Virtual register for PC. *)
-let pc = 1
+let pc = 15
 
 (* Virtual register for SP. *)
-let sp = 2
+let sp = 13
 
 (* Virtual register for FP. *)
-let fp = 3
+let fp = 12
 
 (** Virtual register to return a value. *)
-let vr = 4
-
+let vr = 0
 
 (** Link register (ARM depedent). *)
-let lr = 5
+let lr = 14
 
+
+(** Base of virtual registers. *)
+let vbase = 16
 
 (** Representation of quadruplets. *)
 type quad =
@@ -83,9 +85,11 @@ let output_data out d =
 	| QINT (l, v)	-> fprintf out "%s: .int %d" l v
 	| QFLOAT (l, v)	-> fprintf out "%s: .float %f" l v
 	
+(** Function representation. *)
+type funct = string * int * quad list
 
 (** Representation of the program. *)
-type comp_unit = quad list * data list
+type comp_unit = funct list * data list
 
 
 (** Label counter. *)
@@ -99,12 +103,18 @@ let new_lab _ =
 
 
 (** Virtual integer register counter. *)
-let int_vreg_cnt = ref 5
+let int_vreg_cnt = ref vbase
 
 
 (** Virtual float register counter. *)
 let flt_vreg_cnt = ref 1000000
 
+
+(** Test if a register is virtual.
+	@param v	Tested register.
+	@return		True if v is virtual, false else. *)
+let is_virtual v =
+	v >= vbase
 
 (** Generate a new virtual register. *)
 let new_tmp t =
@@ -186,18 +196,23 @@ let output_quad out q =
 	| QPOP i				-> fprintf out "pop %a" outv i
 
 
+let output_quads out qs =
+	iter (fun q -> output_quad out q; output_char out '\n') qs
+
 (** Output the given compilation unit.
 	@param out	Output to use.
 	@param unit	Unit to display. *)
 let output_unit out unit =
 	let (code, data) = unit in
 	output_string out "CODE:\n\t";
-	iter (fun q ->
-			(match q with
-			| LABEL _	-> ()
-			| _			-> output_char out '\t');
-			output_quad out q;
-			output_string out "\n\t")
+	iter (fun (_, _, qs) ->
+			iter (fun q ->
+				(match q with
+				| LABEL _	-> ()
+				| _			-> output_char out '\t');
+				output_quad out q;
+				output_string out "\n\t")
+			qs)
 		code;
 	output_string out "\nDATA:\n\t";
 	iter (fun d -> output_data out d; output_string out "\n\t") data

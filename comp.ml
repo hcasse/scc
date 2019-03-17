@@ -273,8 +273,7 @@ let t_d ds =
 			let env', _ = fold_left param (env, if do_call then 8 else 4) ps in
 			let env', fsize = decl s (env', 0) in
 			let q =
-				  code
-				@ [ LABEL i ]
+				  [ LABEL i ]
 				@ (if do_call then [QPUSH lr] else [])
 				@ [
 					QPUSH fp;
@@ -290,7 +289,7 @@ let t_d ds =
 					QPOP fp;
 				]
 				@ [if do_call then QPOP lr else RETURN] in
-			(q, data, env)
+			(code @ [(i, fsize, q)], data, env)
 		| FUNDECL _ ->
 			failwith "Comp.decs"
 		in

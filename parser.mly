@@ -54,16 +54,47 @@ let process decs =
 		if !output_c then Cout.decls stdout decs
 		else output_decls stdout decs in
 
+	(* dump raw AST *)
 	if !stop_after_syntax then output decs else
+
+	(* semantics analysis: naming disambiguation and type checking *)
 	let decs = Sem.check_names decs in
 	let decs = Sem.check_types decs in
 	if !stop_after_typing then output decs else
+
+	(* constant optimizations *)
 	let decs = Cst.check decs in
 	if !stop_after_sem then output decs else
+	
+	(* code generation: from AST to quads *)
 	let unit = Comp.t_d decs in
 	if !stop_after_trans then Quad.output_unit stdout unit else
-	Select.output_prog stdout (Select.prog unit)
 	
+	(* split into CFG *)
+	let (fs, ds) = unit in
+	let cfgs = List.map (fun (i, l, qs) -> (i, l,Cfg.from_quads qs)) fs in
+	if !stop_after_cfg then List.iter
+		(fun (i, _, g) ->
+			printf "FUNCTION %s\n" i;
+			Cfg.print g Quad.output_quads
+		) cfgs else
+
+	(* code selection: from quad/CFG to assembly *)
+	let cfgs = List.map Select.cfg cfgs in
+	if !stop_after_select then List.iter
+		(fun (i, _, g) ->
+			printf "FUNCTION %s\n" i;
+			Cfg.print g Select.output_insts
+		) cfgs else
+		
+	(* register allocation *)
+	let cfgs = List.map Regalloc.cfg cfgs in
+	
+	(* rebuild list of instructions and output *)
+	Select.output_prog stdout (
+			List.map (fun (i, l, g) -> (i, l, Cfg.to_list g)) cfgs,
+			Select.data ds
+		)
 %}
 
 %token<string> ID

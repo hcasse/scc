@@ -10,8 +10,10 @@ SOURCES = \
 	cst.ml \
 	cout.ml \
 	quad.ml \
+	cfg.ml \
 	comp.ml \
 	select.ml \
+	regalloc.ml \
 	parser.mly \
 	lexer.mll \
 	main.ml
@@ -29,14 +31,16 @@ scc: $(OBJECTS)
 ast.cmo: common.cmo
 lexer.cmo: parser.cmi common.cmo
 main.cmo: parser.cmi parser.cmo lexer.cmo common.cmo ast.cmo
-parser.cmo: parser.cmi common.cmo ast.cmo sem.cmo comp.cmo select.ml
+parser.cmo: parser.cmi common.cmo sem.cmo comp.cmo select.ml regalloc.cmo
 sem.cmo: common.cmo ast.cmo
 parser.cmi: common.cmo
-comp.cmo: quad.cmo ast.cmo
+comp.cmo: quad.cmo ast.cmo cfg.cmo
 cout.cmo: common.cmo ast.cmo
 cst.cmo: ast.cmo sem.cmo
 quad.cmo: common.cmo
-select.cmo: quad.cmo
+select.cmo: quad.cmo cfg.cmo
+cfg.cmo: quad.cmo
+regalloc.cmo: cfg.cmo select.cmo
 
 %.cmo: %.ml
 	$(OCAMLC) -c $< -o $@
