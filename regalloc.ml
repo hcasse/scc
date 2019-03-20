@@ -47,6 +47,14 @@ let free_regs = [0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10]
 let new_context l = (free_regs, [], [], l)
 
 
+(** Reset the real registers allocated in this context.
+	@param ctx	Context to reset.
+	@return		Context reset and updated. *)
+let reset_context ctx =
+	let (_, s, m, l) = ctx in
+	(free_regs, map (fun (_, k) -> (-1, k)) s, [], l)
+
+
 (** Try to allocate a new register.
 	@param ctx	Current context.
 	@param v	Virtual register to allocate to a real register.
@@ -146,19 +154,36 @@ let restore_reg ctx v =
 
 (** Try to find a real register for the given virtual register.
 	@param ctx	Current register.
-	@param v	Virtual register to find a real register for.
+	@param v	Virtual register to find a real register for.*
+	@param w	True if w is written, false else.
 	@return		(real register, new context). *)
 let spill ctx v w =
 	failwith "spill: not enough registers."
 
 
+(** Try to free dead registers after execution of i.
+	@param ctx	Current context.
+	@param i	Current instruction.
+	@return		Updated context. *)
+let free ctx i =
+	ctx
+
+
+(** Allocate a register for the given virtual register.
+	@param ctx	Current context.
+	@param v	Virtual regiser to allocate.
+	@param w	Write action or not.
+	@return		(real register, context, insts). *)
+let alloc ctx v w =
+	(v, ctx, [])
+
 (** Perform local register allocation in the given BB.
-	@param l	Local memory size.
+	@param ctx	Current context.
 	@param i	BB index.
 	@param v	BB.
-	@return		BB after allocation. *)
-let alloc_bb l i b =
-	b
+	@return		(BB after allocation, new context). *)
+let alloc_bb ctx i b =
+	(b, ctx)
 
 
 (** Allocate register in the given CFG.
@@ -166,4 +191,12 @@ let alloc_bb l i b =
 	@return			Resulting CFG. *)
 let cfg g =
 	let (i, l, g) = g in
-	(i, l, Cfg.replace (alloc_bb l) g)
+	let ctx = new_context l in
+	let (g, _) = Cfg.fold
+			(fun (g, c) i v ->
+				let (v, c) = alloc_bb c i v in
+				let (_, g) = Cfg.add_vertex g v in
+				(g, reset_context c))
+			g
+			(Cfg.new_graph [] [], ctx) in
+	(i, l, g)

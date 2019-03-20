@@ -299,7 +299,6 @@ let stop_after_typing = ref false
 (** If true, stop the compiler just after syntactic analysis. *)
 let stop_after_syntax = ref false
 
-
 (** If true, stop the compiler just after semantic analysis. *)
 let stop_after_sem = ref false
 

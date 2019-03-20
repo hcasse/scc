@@ -241,24 +241,24 @@ let t_d ds =
 		| CALL (e, es)
 			-> true in
 	
-	let param (env, off) (t, i) =
-		(add_env env i (LOCAL off), off + param_size t) in
+	let param (env, off, offs) (t, i) =
+		(add_env env i (LOCAL off), off + param_size t, (i, off)::offs) in
 	
-	let local (env, off) t i =
+	let local (env, off, offs) t i =
 		let off = (off - (sizeof t)) land (lnot ((align t) - 1)) in
-		(add_env env i (LOCAL off), off) in
+		(add_env env i (LOCAL off), off, (i, off)::offs) in
 	
-	let rec decl s (env, off) =
+	let rec decl s (env, off, offs) =
 		match s with
-		| DECLARE (t, i, s) -> decl s (local (env, off) t i)
+		| DECLARE (t, i, s) -> decl s (local (env, off, offs) t i)
 		| SEQ (s1, s2)		
-		| IF (_, s1, s2)	-> decl s2 (decl s1 (env, off))
+		| IF (_, s1, s2)	-> decl s2 (decl s1 (env, off, offs))
 		| WHILE (_, s)		
 		| DOWHILE (s, _)	
 		| SWITCH (_, s)		
 		| SLINE (_, s)
-		| BLOCK s			-> decl s (env, off)
-		| _					-> (env, off) in
+		| BLOCK s			-> decl s (env, off, offs)
+		| _					-> (env, off, offs) in
 	
 	let comp (code, data, env) d =
 		match d with
@@ -270,8 +270,8 @@ let t_d ds =
 			let do_call = call_stmt s in
 			let rlab = new_lab () in
 			let env = add_env env i (GLOBAL i) in
-			let env', _ = fold_left param (env, if do_call then 8 else 4) ps in
-			let env', fsize = decl s (env', 0) in
+			let env', _, offs = fold_left param (env, (if do_call then 8 else 4), []) ps in
+			let env', fsize, offs = decl s (env', 0, []) in
 			let q =
 				  [ LABEL i ]
 				@ (if do_call then [QPUSH lr] else [])

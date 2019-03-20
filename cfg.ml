@@ -161,7 +161,7 @@ let map_succs f g i =
 
 (** Replace the vertices by the vertices result from g applied on each
 	vertex.  f is called as f i v with i the index of the vertex and v
-	the vertex value itself.
+	the vertex value itself. f returns the new value vertex.
 	@param f	Function to apply to each vertex.
 	@param g	Graph to work.
 	@return		Change graph. *)
