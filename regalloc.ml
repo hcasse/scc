@@ -72,9 +72,10 @@ let alloc_reg ctx v =
 	@return		Real register or -1. *)
 let get_reg ctx v =
 	let (_, s, _, _) = ctx in
-	match assoc_opt v s with
-	| None			-> -1
-	| Some (r, _)	-> r
+	try
+		fst (assoc v s)
+	with Not_found ->
+		-1
 
 
 (** Get offset in local memory to store virtual register v.
@@ -84,15 +85,14 @@ let get_reg ctx v =
 	@return		(frame offset, new context). *)
 let get_offset ctx v =
 	let (f, s, m, l) = ctx in
-	match assoc_opt v s with
-	| None ->
-		let l = l + 4 in
+	let l = l + 4 in
+	try
+		let (r, o) = assoc v s in
+		if o = -1
+		then (-l, (f, (v, (r, -l))::(remove_assoc v s), m, l))
+		else (o, ctx)
+	with Not_found ->
 		(-l, (f, (v, (-1, -l))::(remove_assoc v s), m, l))
-	| Some (r, -1) ->
-		let l = l + 4 in
-		(-l, (f, (v, (r, -l))::(remove_assoc v s), m, l))
-	| Some (_, o) ->
-		(o, ctx)
 
 
 (** Add the given virtual register to the list of modified
@@ -121,15 +121,17 @@ let get_modifs ctx =
 	@return		New context. *)
 let free_reg ctx v =
 	let (f, s, m, l) = ctx in
-	match assoc_opt v s with
-	| None 
-	| Some (-1, _) ->
+	try
+		let (r, o) = assoc v s in
+		if r = -1 then failwith "Regalloc.free_reg" else
+		(
+			r::f,
+			(v, (-1, o))::(remove_assoc v s),
+			filter (fun r' -> r <> r) m,
+			l
+		)
+	with Not_found ->
 		failwith "Regalloc.free_reg"
-	| Some (r, o) -> (
-		r::f,
-		(v, (-1, o))::(remove_assoc v s),
-		filter (fun r' -> r <> r) m,
-		l)
 
 
 (** Generate code to save a register to the frame.
